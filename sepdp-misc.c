@@ -1,6 +1,6 @@
 
 /* 
-* scpdp-misc.c
+* sepdp-misc.c
 *
 * Copyright (c) 2010, Zachary N J Peterson <znpeters@nps.edu>
 * All rights reserved.
@@ -30,7 +30,7 @@
 
 
 
-#include "scpdp.h"
+#include "sepdp.h"
 
 void printhex(unsigned char *ptr, size_t size){
 
@@ -59,7 +59,7 @@ unsigned char *generate_prf_f(unsigned char *key, unsigned int i, size_t *prf_re
 	memset(prf_result, 0, SHA_DIGEST_LENGTH);
 
 	/* Perform the HMAC on the index */
-	if(!HMAC(EVP_sha1(), key, SCPDP_PRF_KEY_SIZE, (unsigned char *)&i, sizeof(unsigned int), 
+	if(!HMAC(EVP_sha1(), key, SEPDP_PRF_KEY_SIZE, (unsigned char *)&i, sizeof(unsigned int), 
 		prf_result, (unsigned int *)prf_result_size)) goto cleanup;
 
 	return prf_result;
@@ -82,19 +82,19 @@ unsigned int *generate_prp_g(unsigned char *ki, size_t ki_size, unsigned int d, 
 	int x = 0, j = 0;
 	unsigned int *indices = NULL;
 	
-	if(!ki || ki_size < SCPDP_PRP_KEY_SIZE) return NULL;
+	if(!ki || ki_size < SEPDP_PRP_KEY_SIZE) return NULL;
 
 	/* Allocate memory */
-	if( ((prp_result = malloc(SCPDP_PRP_KEY_SIZE)) == NULL)) goto cleanup;
-	if( ((prp_input = malloc(SCPDP_PRP_KEY_SIZE)) == NULL)) goto cleanup;
+	if( ((prp_result = malloc(SEPDP_PRP_KEY_SIZE)) == NULL)) goto cleanup;
+	if( ((prp_input = malloc(SEPDP_PRP_KEY_SIZE)) == NULL)) goto cleanup;
 	if( ((indices = malloc(r * sizeof(unsigned int))) == NULL)) goto cleanup;
 	
-	memset(prp_result, 0, SCPDP_PRP_KEY_SIZE);
-	memset(prp_input, 0, SCPDP_PRP_KEY_SIZE);
+	memset(prp_result, 0, SEPDP_PRP_KEY_SIZE);
+	memset(prp_input, 0, SEPDP_PRP_KEY_SIZE);
 	memset(&aes_key, 0, sizeof(AES_KEY));
 	
 	/* Setup the AES key */
-	AES_set_encrypt_key(ki, SCPDP_PRP_KEY_SIZE * 8, &aes_key);
+	AES_set_encrypt_key(ki, SEPDP_PRP_KEY_SIZE * 8, &aes_key);
 	
 	/* Choose r blocks from 0 to d - 1 (file blocks) without replacement */
 	for(x = 0; x < d && j < r; x++){
@@ -119,15 +119,15 @@ unsigned int *generate_prp_g(unsigned char *ki, size_t ki_size, unsigned int d, 
 	}
 	
 	/* Clear and free variables */
-	if(prp_input) sfree(prp_input, SCPDP_PRP_KEY_SIZE);
-	if(prp_result) sfree(prp_result, SCPDP_PRP_KEY_SIZE);
+	if(prp_input) sfree(prp_input, SEPDP_PRP_KEY_SIZE);
+	if(prp_result) sfree(prp_result, SEPDP_PRP_KEY_SIZE);
 	memset(&aes_key, 0, sizeof(AES_KEY));
 	
 	return indices;
 
 cleanup:
-	if(prp_result) sfree(prp_result, SCPDP_PRP_KEY_SIZE);
-	if(prp_input) sfree(prp_input, SCPDP_PRP_KEY_SIZE);
+	if(prp_result) sfree(prp_result, SEPDP_PRP_KEY_SIZE);
+	if(prp_input) sfree(prp_input, SEPDP_PRP_KEY_SIZE);
 	if(indices) sfree(indices, (r * sizeof(unsigned int)));
 	memset(&aes_key, 0, sizeof(AES_KEY));
 
@@ -152,7 +152,7 @@ unsigned char *generate_H(unsigned char *c_i, size_t c_i_len, unsigned char **D,
 	
 	for(i = 0; i < r; i++){
 		if(!D[i]) goto cleanup;
-		if(!SHA1_Update(&ctx, D[i], SCPDP_BLOCK_SIZE)) goto cleanup;
+		if(!SHA1_Update(&ctx, D[i], SEPDP_BLOCK_SIZE)) goto cleanup;
 	}
 	
 	if(!SHA1_Final(vi, &ctx)) goto cleanup;
@@ -160,9 +160,55 @@ unsigned char *generate_H(unsigned char *c_i, size_t c_i_len, unsigned char **D,
 	*vi_len = SHA_DIGEST_LENGTH;
 	return vi;
 	
-cleanup:
+ cleanup:
 	if(vi) sfree(vi, SHA_DIGEST_LENGTH);
 	if(vi_len) *vi_len = 0;
 	
+	return NULL;
+}
+
+void destroy_sepdp_challenge(SEPDP_challenge *challenge){
+	
+	if(!challenge) return;
+	if(challenge->i) challenge->i = 0;
+	if(challenge->ki) sfree(challenge->ki, challenge->ki_size);
+	if(challenge->ci) sfree(challenge->ci, challenge->ci_size);
+	
+	return;
+}
+
+SEPDP_challenge *generate_sepdp_challenge(){
+	
+	SEPDP_challenge *challenge = NULL;
+	
+	if( ((challenge = malloc(sizeof(SEPDP_challenge))) == NULL)) goto cleanup;
+	memset(challenge, 0, sizeof(SEPDP_challenge));
+	
+	return challenge;
+	
+ cleanup:
+	if(challenge) destroy_sepdp_challenge(challenge);
+	return NULL;
+}
+
+void destroy_sepdp_proof(SEPDP_proof *proof){
+
+	if(!proof) return;
+	if(proof->z) sfree(proof->z, proof->z_size);
+	if(proof->z_size) proof->z_size = 0;
+	
+	return;
+}
+
+SEPDP_proof *generate_sepdp_proof(){
+	
+	SEPDP_proof *proof = NULL;
+
+	if( ((proof = malloc(sizeof(SEPDP_proof))) == NULL)) goto cleanup;
+	memset(proof, 0, sizeof(SEPDP_proof));
+	
+	return proof;
+ cleanup:
+	if(proof) destroy_sepdp_proof(proof);
 	return NULL;
 }
