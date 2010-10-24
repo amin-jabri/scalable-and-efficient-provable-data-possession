@@ -1,11 +1,10 @@
 
 
-#include "scpdp.h"
+#include "sepdp.h"
 
 int main(int argc, char **argv){
   
-  
-  if(!scpdp_setup(argv[1], strlen(argv[1]),  NULL, 0, 30))
+  if(!sepdp_setup_file(argv[1], strlen(argv[1]),  NULL, 0, 30))
     printf("Error\n");
   else
     printf("Success\n");

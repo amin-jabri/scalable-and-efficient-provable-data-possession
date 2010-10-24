@@ -1,6 +1,6 @@
 
 /* 
-* scpdp.h
+* sepdp.h
 *
 * Copyright (c) 2010, Zachary N J Peterson <znpeters@nps.edu>
 * All rights reserved.
@@ -28,8 +28,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef __SCPDP_H__
-#define __SCPDP_H__
+#ifndef __SEPDP_H__
+#define __SEPDP_H__
 
 #include <limits.h>
 #include <string.h>
@@ -41,44 +41,55 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
-#define SCPDP_PRF_KEY_SIZE 20 /* Size (in bytes) of an HMAC-SHA1 */
-#define SCPDP_PRP_KEY_SIZE 16 /* Size (in bytes) of an AES key */
-#define SCPDP_AE_KEY_SIZE 16  /* Size (in bytes) of the authenticated encryption key */
+#define SEPDP_PRF_KEY_SIZE 20 /* Size (in bytes) of an HMAC-SHA1 */
+#define SEPDP_PRP_KEY_SIZE 16 /* Size (in bytes) of an AES key */
+#define SEPDP_AE_KEY_SIZE 16  /* Size (in bytes) of the authenticated encryption key */
 
-#define SCPDP_BLOCK_SIZE 4096
+#define SEPDP_BLOCK_SIZE 4096
 
 /* 512 blocks gives you 99.4% chance of detecting an error */
 #define MAGIC_NUM_CHALLENGE_BLOCKS 512
 
-typedef struct SCPDP_key_struct SCPDP_key;
+typedef struct SEPDP_key_struct SEPDP_key;
 
-struct SCPDP_key_struct{
+struct SEPDP_key_struct{
 
 	unsigned char *W;
+	size_t W_size;
 	unsigned char *Z;
+	size_t Z_size;
 	unsigned char *K;
-	
+	size_t K_size;
 };
 
-typedef struct SCPDP_challenge_struct SCPDP_challnenge;
+typedef struct SEPDP_challenge_struct SEPDP_challenge;
 
-struct SCPDP_challenge_struct{
+struct SEPDP_challenge_struct{
 
 	unsigned int i;
 	unsigned char *ki;
+	size_t ki_size;
 	unsigned char *ci;
-
+	size_t ci_size;
 };
 
-/* From scpdp.file.c */
-int scpdp_setup_file(char *filepath, size_t filepath_len,  char *tokenfilepath, size_t tokenfilepath_len, unsigned int t);
+typedef struct SEPDP_proof_struct SEPDP_proof;
 
-/* From scpdp-key.c */
-SCPDP_key *scpdp_get_keys();
-SCPDP_key *generate_scpdp_key();
-void destroy_scpdp_key(SCPDP_key *key);
+struct SEPDP_proof_struct{
 
-/* From scpdp-misc.c */
+	unsigned char *z;
+	size_t z_size;
+};
+
+/* From sepdp.file.c */
+int sepdp_setup_file(char *filepath, size_t filepath_len,  char *tokenfilepath, size_t tokenfilepath_len, unsigned int t);
+
+/* From sepdp-key.c */
+SEPDP_key *sepdp_get_keys();
+SEPDP_key *generate_sepdp_key();
+void destroy_sepdp_key(SEPDP_key *key);
+
+/* From sepdp-misc.c */
 void printhex(unsigned char *ptr, size_t size);
 
 void sfree(void *ptr, size_t size);
@@ -88,5 +99,11 @@ unsigned char *generate_prf_f(unsigned char *W, unsigned int i, size_t *prf_resu
 unsigned int *generate_prp_g(unsigned char *ki, size_t ki_size, unsigned int d, unsigned int r);
 
 unsigned char *generate_H(unsigned char *c_i, size_t c_i_len, unsigned char **D, unsigned int r, size_t *vi_len);
+
+void destroy_sepdp_challenge(SEPDP_challenge *challenge);
+SEPDP_challenge *generate_sepdp_challenge();
+
+void destroy_sepdp_proof(SEPDP_proof *proof);
+SEPDP_proof *generate_sepdp_proof();
 
 #endif

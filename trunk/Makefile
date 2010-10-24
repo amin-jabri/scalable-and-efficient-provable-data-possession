@@ -1,23 +1,20 @@
 
 #-finstrument-functions -lSaturn -pg 
 
-all: scpdp-misc.o scpdp.h scpdp-core.o scpdp-keys.o scpdp-file.o scpdp-app.c 
-	gcc -g -Wall -O3 -lcrypto -o scpdp scpdp-app.c scpdp-core.o scpdp-misc.o scpdp-keys.o scpdp-file.o
+all: sepdp-misc.o sepdp.h sepdp-keys.o sepdp-file.o sepdp-app.c 
+	gcc -g -Wall -O3 -lcrypto -o sepdp sepdp-app.c sepdp-misc.o sepdp-keys.o sepdp-file.o
 
-scpdp-core.o: scpdp-core.c scpdp.h
-	gcc -g -Wall -O3 -c scpdp-core.c
+sepdp-keys.o: sepdp-keys.c sepdp.h
+	gcc -g -Wall -O3 -c sepdp-keys.c
 
-scpdp-keys.o: scpdp-keys.c scpdp.h
-	gcc -g -Wall -O3 -c scpdp-keys.c
+sepdp-misc.o: sepdp-misc.c sepdp.h
+	gcc -g -Wall -O3 -c sepdp-misc.c
 
-scpdp-misc.o: scpdp-misc.c scpdp.h
-	gcc -g -Wall -O3 -c scpdp-misc.c
+sepdp-file.o: sepdp-file.c sepdp.h
+	gcc -g -Wall -O3 -c sepdp-file.c
 
-scpdp-file.o: scpdp-file.c scpdp.h
-	gcc -g -Wall -O3 -c scpdp-file.c
-
-scpdplib: scpdp-core.o scpdp-misc.o scpdp-keys.o scpdp-file.o
-	ar -rv scpdplib.a scpdp-core.o scpdp-misc.o scpdp-keys.o scpdp-file.o
+sepdplib: sepdp-core.o sepdp-misc.o sepdp-keys.o sepdp-file.o
+	ar -rv sepdplib.a sepdp-misc.o sepdp-keys.o sepdp-file.o
 
 clean:
-	rm -rf *.o *.tok scpdp.dSYM scpdp
+	rm -rf *.o *.tok sepdp.dSYM sepdp
