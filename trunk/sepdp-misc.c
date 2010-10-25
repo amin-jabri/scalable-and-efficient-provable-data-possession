@@ -112,7 +112,6 @@ unsigned int *generate_prp_g(unsigned char *ki, size_t ki_size, unsigned int d, 
 		result = ((double)index/(double)UINT_MAX);
 	
 		if( (d - x) * result < r - j){
-			printf("X: %d\n", x);
 			indices[j] = x;
 			j++;
 		}
@@ -195,7 +194,8 @@ void destroy_sepdp_proof(SEPDP_proof *proof){
 
 	if(!proof) return;
 	if(proof->z) sfree(proof->z, proof->z_size);
-	if(proof->z_size) proof->z_size = 0;
+	if(proof->token) sfree(proof->token, proof->token_size);
+	proof->z_size = proof->token_size = 0;
 	
 	return;
 }
@@ -206,6 +206,10 @@ SEPDP_proof *generate_sepdp_proof(){
 
 	if( ((proof = malloc(sizeof(SEPDP_proof))) == NULL)) goto cleanup;
 	memset(proof, 0, sizeof(SEPDP_proof));
+	/* We don't allocate z because generate_H() allocates the memory for us */
+	if( ((proof->token = malloc(SHA_DIGEST_LENGTH)) == NULL)) goto cleanup;
+	memset(proof->token, 0, SHA_DIGEST_LENGTH);
+	proof->token_size = SHA_DIGEST_LENGTH;
 	
 	return proof;
  cleanup:

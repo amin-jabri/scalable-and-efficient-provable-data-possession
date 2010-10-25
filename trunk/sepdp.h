@@ -79,10 +79,18 @@ struct SEPDP_proof_struct{
 
 	unsigned char *z;
 	size_t z_size;
+	unsigned char *token;
+	size_t token_size;
 };
 
-/* From sepdp.file.c */
+/* From sepdp-file.c */
 int sepdp_setup_file(char *filepath, size_t filepath_len,  char *tokenfilepath, size_t tokenfilepath_len, unsigned int t);
+
+SEPDP_challenge *sepdp_challenge_file(char *filepath, size_t filepath_len, unsigned int i);
+
+SEPDP_proof *sepdp_prove_file(char *filepath, size_t filepath_len, char *tokenfilepath, size_t tokenfilepath_len, SEPDP_challenge *challenge);
+
+int sepdp_verify_file(SEPDP_proof *proof);
 
 /* From sepdp-key.c */
 SEPDP_key *sepdp_get_keys();

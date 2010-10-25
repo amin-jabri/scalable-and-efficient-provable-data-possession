@@ -32,9 +32,14 @@ SEPDP_key *generate_sepdp_key(){
 	if( ((key->K = malloc(SEPDP_AE_KEY_SIZE)) == NULL)) goto cleanup;	
   
 	/* Generate symmetric keys */
+/*
 	if(!RAND_bytes(key->W, SEPDP_PRF_KEY_SIZE)) goto cleanup;
 	if(!RAND_bytes(key->Z, SEPDP_PRF_KEY_SIZE)) goto cleanup;
 	if(!RAND_bytes(key->K, SEPDP_AE_KEY_SIZE)) goto cleanup;
+	*/
+	memset(key->W, 'W', SEPDP_PRF_KEY_SIZE);
+	memset(key->Z, 'Z', SEPDP_PRF_KEY_SIZE);
+	memset(key->K, 'K', SEPDP_AE_KEY_SIZE);
 	key->W_size = SEPDP_PRF_KEY_SIZE;
 	key->Z_size = SEPDP_PRF_KEY_SIZE;
 	key->K_size = SEPDP_AE_KEY_SIZE;
