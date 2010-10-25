@@ -1,0 +1,7 @@
+Keying is all messed up.  We need to generate and store master keys, and then generate sessions key W and Z per file.  Right now they're hard coded, so yah, not very secure.  This is mostly fine for measurement.
+
+We need to store per-file token index metadata someplace.
+
+Token are not encrypted or MAC'd.  This is totally insecure and defeats the whole scheme.  Again, it's mostly fine for measurement, though.
+
+Optimization:  Right now, proving allocated a r * blocksize array to do the hashing -- this isn't really necessary.  We can do the hash incrementally.

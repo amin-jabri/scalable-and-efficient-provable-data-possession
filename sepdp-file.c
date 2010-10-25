@@ -170,10 +170,11 @@ SEPDP_challenge *sepdp_challenge_file(char *filepath, size_t filepath_len, unsig
 	SEPDP_key *key = NULL;
 	SEPDP_challenge *challenge = NULL;
 	
+	/* Allocate space for the challenge */
 	challenge = generate_sepdp_challenge();
 	if(!challenge) goto cleanup;
 	
-	/* Get the PRF, PRP and AE keys */
+	/* Get the PRF, PRP and AE keys for the file to challenge */
 	key = sepdp_get_keys();
 	if(!key) goto cleanup;
 
@@ -194,11 +195,13 @@ SEPDP_challenge *sepdp_challenge_file(char *filepath, size_t filepath_len, unsig
 	return NULL;
 }
 
-SEPDP_proof *cpor_prove_file(char *filepath, size_t filepath_len, SEPDP_challenge *challenge){
+SEPDP_proof *sepdp_prove_file(char *filepath, size_t filepath_len, char *tokenfilepath, size_t tokenfilepath_len, SEPDP_challenge *challenge){
 	
 	SEPDP_proof *proof = NULL;
 	FILE *file = NULL;
+	FILE *tokenfile = NULL;
 	unsigned char **D = NULL;
+	char realtokenfilepath[MAXPATHLEN];
 	unsigned int numfileblocks = 0;
 	unsigned int r = 0;
 	unsigned int *indices = NULL;
@@ -215,6 +218,17 @@ SEPDP_proof *cpor_prove_file(char *filepath, size_t filepath_len, SEPDP_challeng
 		fprintf(stderr, "ERROR: Was unable to open %s\n", filepath);
 		return NULL;
 	}
+	
+	memset(realtokenfilepath, 0, MAXPATHLEN);
+	/* If no token file path is specified, add a .tok extension to the filepath */
+	if(!tokenfilepath && (filepath_len < MAXPATHLEN - 5)){
+		if( snprintf(realtokenfilepath, MAXPATHLEN, "%s.tok", filepath) >= MAXPATHLEN) goto cleanup;
+	}else{
+		memcpy(realtokenfilepath, tokenfilepath, tokenfilepath_len);
+	}
+	
+	tokenfile = fopen(realtokenfilepath, "r");
+	if(!tokenfile) goto cleanup;
 	
 	/* Calculate the number sepdp blocks in the file */
 	if(stat(filepath, &st) < 0) goto cleanup;
@@ -240,7 +254,7 @@ SEPDP_proof *cpor_prove_file(char *filepath, size_t filepath_len, SEPDP_challeng
 	indices = generate_prp_g(challenge->ki, challenge->ki_size, numfileblocks, r);
 	if(!indices) goto cleanup;
 		
-	/* Seek to start of tag file */
+	/* Seek to start of file */
 	if(fseek(file, 0, SEEK_SET) < 0) goto cleanup;
 	for(j = 0; j < r; j++){
 		/* Seek to data block at indices[j] */
@@ -251,20 +265,35 @@ SEPDP_proof *cpor_prove_file(char *filepath, size_t filepath_len, SEPDP_challeng
 		if(ferror(file)) goto cleanup;				
 	}
 		
+	/* Do the hash */
 	proof->z = generate_H(challenge->ci, challenge->ci_size, D, r, &(proof->z_size));
 	if(!proof->z) goto cleanup;
 	
+	/* Get the (encrypted) token to send back to the client */
+	/* Seek to start of token file */
+	if(fseek(tokenfile, 0, SEEK_SET) < 0) goto cleanup;
+	for(j = 0; j < challenge->i + 1; j++){
+		/* Read the token */
+		fread(&i, sizeof(unsigned int), 1, tokenfile);
+		if(ferror(tokenfile)) goto cleanup;
+		fread(&(proof->token_size), sizeof(size_t), 1, tokenfile);
+		if(ferror(tokenfile)) goto cleanup;
+		fread(proof->token, proof->token_size, 1, tokenfile);
+	}
+	
+
 	if(file) fclose(file);
+	if(tokenfile) fclose(tokenfile);
 	if(indices) sfree(indices, sizeof(unsigned int) * r);
 	if(D){
 		for(i = 0; i < r; i++) sfree(D[i], SEPDP_BLOCK_SIZE);
 		sfree(D, r * sizeof(unsigned char *));
 	}
-	
 	return proof;
 	
  cleanup:
 	if(file) fclose(file);
+	if(tokenfile) fclose(tokenfile);
 	if(proof) destroy_sepdp_proof(proof);
 	if(indices) sfree(indices, sizeof(unsigned int) * r);
 	if(D){
@@ -275,7 +304,24 @@ SEPDP_proof *cpor_prove_file(char *filepath, size_t filepath_len, SEPDP_challeng
 	return NULL;
 }
 
-int CPOR_verify_file(char *filepath, size_t filepath_len, char *tokenfilepath, size_t tokenfilepath_len, SEPDP_challenge *challenge, SEPDP_proof *proof){
+int sepdp_verify_file(SEPDP_proof *proof){
 
-	return 0;
+	int ret = 0;
+
+	if(!proof) return -1;
+	
+	//TODO: Decrypt token
+	
+	if(proof->z_size != proof->token_size) return -1;
+
+#ifdef DEBUG
+	printf("z: ");
+	printhex(proof->z, proof->z_size);
+	printf("token: ");
+	printhex(proof->token, proof->token_size);
+#endif
+
+	ret = memcmp(proof->z, proof->token, proof->z_size);
+
+	return ret;
 }
