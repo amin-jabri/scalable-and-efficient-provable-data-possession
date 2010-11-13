@@ -176,6 +176,108 @@ void destroy_sepdp_challenge(SEPDP_challenge *challenge){
 	return;
 }
 
+
+int decrypt_and_verify_token(SEPDP_key *key, unsigned char *input, size_t input_len, unsigned char *plaintext, size_t *plaintext_len, unsigned char *authenticator, size_t authenticator_len){
+
+	EVP_CIPHER_CTX ctx;
+	EVP_CIPHER *cipher = NULL;
+	unsigned char mac[EVP_MAX_MD_SIZE];
+	size_t mac_size = EVP_MAX_MD_SIZE;
+	int len;
+	
+	if(!key || !key->K || !input || !input_len || !plaintext || !plaintext_len || !authenticator || !authenticator_len) return 0; 
+	
+	OpenSSL_add_all_algorithms();
+	memset(mac, 0, mac_size);
+	
+	/* Verify the HMAC-SHA1 */
+	if(!HMAC(EVP_sha1(), key->K, key->K_size, input, input_len, mac, (unsigned int *)&mac_size)) goto cleanup;
+	if(authenticator_len != mac_size) goto cleanup;
+	if(memcmp(mac, authenticator, mac_size) != 0) goto cleanup;
+	
+	
+	EVP_CIPHER_CTX_init(&ctx);
+	switch(key->K_size){
+		case 16:
+			cipher = (EVP_CIPHER *)EVP_aes_128_cbc();
+			break;
+		case 24:
+			cipher = (EVP_CIPHER *)EVP_aes_192_cbc();
+			break;
+		case 32:
+			cipher = (EVP_CIPHER *)EVP_aes_256_cbc();
+			break;
+		default:
+			return 0;
+	}
+	if(!EVP_DecryptInit(&ctx, cipher, key->K, NULL)) goto cleanup;
+	
+	*plaintext_len = 0;
+	
+	if(!EVP_DecryptUpdate(&ctx, plaintext, (int *)plaintext_len, input, input_len)) goto cleanup;
+	EVP_DecryptFinal(&ctx, plaintext + *plaintext_len, &len);
+	
+	*plaintext_len += len;
+	
+	return 1;
+
+cleanup:
+	*plaintext_len = 0;
+
+	return 0;
+	
+}
+
+int encrypt_and_authentucate_token(SEPDP_key *key, unsigned char *input, size_t input_len, unsigned char *ciphertext, size_t *ciphertext_len, unsigned char *authenticator, size_t *authenticator_len){
+	
+	EVP_CIPHER_CTX ctx;
+	EVP_CIPHER *cipher = NULL;
+	int len;
+	
+	if(!key || !key->K || !input || !input_len || !ciphertext || !ciphertext_len || !authenticator || !authenticator_len) return 0;
+	
+	OpenSSL_add_all_algorithms();
+	
+	EVP_CIPHER_CTX_init(&ctx);
+	switch(key->K_size){
+		case 16:
+			cipher = (EVP_CIPHER *)EVP_aes_128_cbc();
+			break;
+		case 24:
+			cipher = (EVP_CIPHER *)EVP_aes_192_cbc();
+			break;
+		case 32:
+			cipher = (EVP_CIPHER *)EVP_aes_256_cbc();
+			break;
+		default:
+			return 0;
+	}
+	//TODO: Fix the NULL IV
+	if(!EVP_EncryptInit(&ctx, cipher, key->K, NULL)) goto cleanup;
+
+	*ciphertext_len = 0;
+	
+	if(!EVP_EncryptUpdate(&ctx, ciphertext, (int *)ciphertext_len, input, input_len)) goto cleanup;
+	EVP_EncryptFinal(&ctx, ciphertext + *ciphertext_len, &len);
+		
+	*ciphertext_len += len;
+	
+	*authenticator_len = 0;
+	/* Do the HMAC-SHA1 */
+	//TODO: Add MAC key
+	if(!HMAC(EVP_sha1(), key->K, key->K_size, ciphertext, *ciphertext_len,
+		authenticator, (unsigned int *)authenticator_len)) goto cleanup;
+	
+	return 1;
+	
+cleanup:
+	*ciphertext_len = 0;
+	*authenticator_len = 0;
+	
+	return 0;
+	
+}
+
 SEPDP_challenge *generate_sepdp_challenge(){
 	
 	SEPDP_challenge *challenge = NULL;

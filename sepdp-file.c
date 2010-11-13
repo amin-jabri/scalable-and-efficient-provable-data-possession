@@ -40,6 +40,7 @@ int sepdp_setup_file(char *filepath, size_t filepath_len, char *tokenfilepath, s
 	unsigned char *ci = NULL;
 	unsigned char **D = NULL;
 	unsigned char *token_vi = NULL;
+	//unsigned char *AE_token_vi = NULL;
 	unsigned int *indices = NULL;
 	size_t ki_size = 0;
 	size_t ci_size = 0;
@@ -89,6 +90,10 @@ int sepdp_setup_file(char *filepath, size_t filepath_len, char *tokenfilepath, s
 		memset(D[i], 0, SEPDP_BLOCK_SIZE);
 	}
 
+	/* Allocate space for authenticated encrypted token 
+	if( ((AE_token_vi = malloc(SEPDP_BLOCK_SIZE)) == NULL)) goto cleanup;
+	*/
+
 	/* Create a new PRF, PRP and AE keys */
 	key = generate_sepdp_key();
 	if(!key) goto cleanup;
@@ -120,13 +125,15 @@ int sepdp_setup_file(char *filepath, size_t filepath_len, char *tokenfilepath, s
 		token_vi = generate_H(ci, ci_size, D, r, &token_vi_size);
 		
 		//TODO: encrypt and MAC the token.
+		//encrypt_and_authentucate_token(key, unsigned char *input, size_t input_len, unsigned char *ciphertext, size_t *ciphertext_len, unsigned char *authenticator, size_t *authenticator_len)
 		
-		/* Write the token */
+		/* Write the token 	*/
 		fwrite(&i, sizeof(unsigned int), 1, tokenfile);
 		if(ferror(tokenfile)) goto cleanup;
 		fwrite(&token_vi_size, sizeof(size_t), 1, tokenfile);
 		if(ferror(tokenfile)) goto cleanup;
 		fwrite(token_vi, token_vi_size, 1, tokenfile);
+
 		
 		/* Cleanup */
 		if(ki) sfree(ki, ki_size);
@@ -230,6 +237,8 @@ SEPDP_proof *sepdp_prove_file(char *filepath, size_t filepath_len, char *tokenfi
 	tokenfile = fopen(realtokenfilepath, "r");
 	if(!tokenfile) goto cleanup;
 	
+	//TODO: This is cheating a little, unless the server has easy access to the entire file.  If not, this needs
+	// to be changed to accomdate the specific storage service API for file size.
 	/* Calculate the number sepdp blocks in the file */
 	if(stat(filepath, &st) < 0) goto cleanup;
 	numfileblocks = (st.st_size/SEPDP_BLOCK_SIZE);
