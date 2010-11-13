@@ -47,6 +47,10 @@
 
 #define SEPDP_BLOCK_SIZE 4096
 
+#define SEPDP_YEAR 5 /* Number of years we want to challenge */
+#define SEPDP_MIN 60 /* Number of minutes we want to challenge a file */
+#define SEPDP_NUM_CHALLENGES ((SEPDP_YEAR * 365 * 24 * 60)/SEPDP_MIN)
+
 /* 512 blocks gives you 99.4% chance of detecting an error */
 #define MAGIC_NUM_CHALLENGE_BLOCKS 512
 
@@ -102,6 +106,10 @@ void printhex(unsigned char *ptr, size_t size);
 
 void sfree(void *ptr, size_t size);
 
+int decrypt_and_verify_token(SEPDP_key *key, unsigned char *input, size_t input_len, unsigned char *plaintext, size_t *plaintext_len, unsigned char *authenticator, size_t authenticator_len);
+
+int encrypt_and_authentucate_token(SEPDP_key *key, unsigned char *input, size_t input_len, unsigned char *ciphertext, size_t *ciphertext_len, unsigned char *authenticator, size_t *authenticator_len);
+
 unsigned char *generate_prf_f(unsigned char *W, unsigned int i, size_t *prf_result_size);
 
 unsigned int *generate_prp_g(unsigned char *ki, size_t ki_size, unsigned int d, unsigned int r);
@@ -113,5 +121,12 @@ SEPDP_challenge *generate_sepdp_challenge();
 
 void destroy_sepdp_proof(SEPDP_proof *proof);
 SEPDP_proof *generate_sepdp_proof();
+
+/* From sepdp-s3.c */
+#ifdef USE_S3
+int sepdp_s3_put_file(char *filepath, size_t filepath_len);
+int sepdp_s3_get_file(char *filepath, size_t filepath_len);
+SEPDP_proof *sepdp_s3_prove_file(char *filepath, size_t filepath_len, char *tagfilepath, size_t tagfilepath_len, SEPDP_challenge *challenge);
+#endif
 
 #endif
