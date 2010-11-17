@@ -166,15 +166,6 @@ unsigned char *generate_H(unsigned char *c_i, size_t c_i_len, unsigned char **D,
 	return NULL;
 }
 
-void destroy_sepdp_challenge(SEPDP_challenge *challenge){
-	
-	if(!challenge) return;
-	if(challenge->i) challenge->i = 0;
-	if(challenge->ki) sfree(challenge->ki, challenge->ki_size);
-	if(challenge->ci) sfree(challenge->ci, challenge->ci_size);
-	
-	return;
-}
 
 
 int decrypt_and_verify_token(SEPDP_key *key, unsigned char *input, size_t input_len, unsigned char *plaintext, size_t *plaintext_len, unsigned char *authenticator, size_t authenticator_len){
@@ -278,6 +269,18 @@ cleanup:
 	
 }
 
+void destroy_sepdp_challenge(SEPDP_challenge *challenge){
+	
+	if(!challenge) return;
+	if(challenge->i) challenge->i = 0;
+	if(challenge->ki) sfree(challenge->ki, challenge->ki_size);
+	if(challenge->ci) sfree(challenge->ci, challenge->ci_size);
+	sfree(challenge, sizeof(SEPDP_challenge));
+	
+	return;
+}
+
+
 SEPDP_challenge *generate_sepdp_challenge(){
 	
 	SEPDP_challenge *challenge = NULL;
@@ -298,6 +301,7 @@ void destroy_sepdp_proof(SEPDP_proof *proof){
 	if(proof->z) sfree(proof->z, proof->z_size);
 	if(proof->token) sfree(proof->token, proof->token_size);
 	proof->z_size = proof->token_size = 0;
+	sfree(proof, sizeof(SEPDP_proof));
 	
 	return;
 }
