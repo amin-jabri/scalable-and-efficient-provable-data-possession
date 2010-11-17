@@ -139,6 +139,7 @@ int sepdp_setup_file(char *filepath, size_t filepath_len, char *tokenfilepath, s
 		if(ki) sfree(ki, ki_size);
 		if(ci) sfree(ci, ci_size);
 		if(token_vi) sfree(token_vi, token_vi_size);
+		if(indices) sfree(indices, r * sizeof(unsigned int));
 		for(j = 0; j < r; j++) memset(D[j], 0, SEPDP_BLOCK_SIZE);	
 	}
 
@@ -146,7 +147,6 @@ int sepdp_setup_file(char *filepath, size_t filepath_len, char *tokenfilepath, s
 	if(key) destroy_sepdp_key(key);
 	if(file) fclose(file);
 	if(tokenfile) fclose(tokenfile);
-	if(indices) sfree(indices, sizeof(unsigned int) * r);
 	if(D){
 		for(i = 0; i < r; i++) sfree(D[i], SEPDP_BLOCK_SIZE);
 		sfree(D, r * sizeof(unsigned char *));
