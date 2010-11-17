@@ -193,6 +193,8 @@ SEPDP_challenge *sepdp_challenge_file(char *filepath, size_t filepath_len, unsig
 	if(!challenge->ci) goto cleanup;
 	challenge->i = i;
 
+	if(key) destroy_sepdp_key(key);
+
 	return challenge;
 	
  cleanup:
