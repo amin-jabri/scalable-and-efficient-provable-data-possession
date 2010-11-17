@@ -73,7 +73,12 @@ int main(int argc, char **argv){
 		ret = sepdp_verify_file(proof);
 		if(ret == 0) printf("Verified!\n");
 		else printf("Cheating!\n");
+		
+		if(challenge) destroy_sepdp_challenge(challenge);
+		if(proof) destroy_sepdp_proof(proof);
 	}
+
+
 
   return 0;
   
