@@ -1,0 +1,1 @@
+The scalable and efficient provable data possession (SEPDP) library allows a client that has stored data at an untrusted server to verify that the server possesses the original data without retrieving it or storing a copy himself.  The scheme using symmetric key constructs, making it a computationally efficient.
